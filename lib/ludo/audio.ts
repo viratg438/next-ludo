@@ -1,42 +1,56 @@
 const SOUND_FILES = {
-  dice: "/sounds/dice.mp3",
   cut: "/sounds/cut.mp3",
-  pass: "/sounds/pass.mp3",
   final: "/sounds/final.mp3",
   stamp: "/sounds/stamp.mp3",
 } as const;
 
-const clips = new Map<string, HTMLAudioElement>();
+let current: HTMLAudioElement | null = null;
+let clickContext: AudioContext | null = null;
 
-function clip(src: string) {
-  const existing = clips.get(src);
-  if (existing) return existing;
-  const audio = new Audio(src);
-  audio.preload = "auto";
-  clips.set(src, audio);
-  return audio;
+function stopCurrent() {
+  if (!current) return;
+  current.pause();
+  current.currentTime = 0;
+  current = null;
 }
 
 export function primeAudio() {
-  for (const src of Object.values(SOUND_FILES)) clip(src);
+  for (const src of Object.values(SOUND_FILES)) {
+    const audio = new Audio(src);
+    audio.preload = "auto";
+  }
+  if (!clickContext) clickContext = new window.AudioContext();
+  if (clickContext.state === "suspended") void clickContext.resume();
 }
 
 function playFile(src: string) {
+  stopCurrent();
   const audio = new Audio(src);
-  audio.preload = "auto";
+  current = audio;
   void audio.play().catch(() => {});
 }
 
 export function playDiceShake() {
-  playFile(SOUND_FILES.dice);
+  stopCurrent();
+  if (!clickContext) clickContext = new window.AudioContext();
+  if (clickContext.state === "suspended") void clickContext.resume();
+  const ctx = clickContext;
+  const at = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(980, at);
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(0.2, at + 0.004);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.045);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(at);
+  osc.stop(at + 0.05);
 }
 
 export function playCut() {
   playFile(SOUND_FILES.cut);
-}
-
-export function playTurnPass() {
-  playFile(SOUND_FILES.pass);
 }
 
 export function playFinalPass() {

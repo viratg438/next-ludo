@@ -2,7 +2,12 @@
 
 import { useRef, useState } from "react";
 import { cellFor, FINISH, PLAYERS, globalIndex } from "@/lib/ludo/board";
-import { playCut, playDiceShake, playFinalPass, playStamp, playTurnPass } from "@/lib/ludo/audio";
+import {
+  playCut,
+  playDiceShake,
+  playFinalPass,
+  playStamp,
+} from "@/lib/ludo/audio";
 import {
   applyMove,
   applyRoll,
@@ -35,9 +40,7 @@ function playBoardSound(base: GameState, move: Move, next: GameState) {
   const mover = base.tokens.find((item) => item.id === move.tokenId);
   if (mover && move.to < 51 && STARS.has(globalIndex(mover.player, move.to))) {
     playStamp();
-    return;
   }
-  if (next.current !== base.current) playTurnPass();
 }
 
 function wait(ms: number) {
@@ -181,7 +184,6 @@ function MatchScreen({
     if (gen.current !== ticket) return;
     setSpinning(false);
     const next = applyRoll(game, value);
-    if (soundRef.current && next.current !== game.current) playTurnPass();
     setGame(next);
     if (next.phase === "select" && next.legal.length === 1) {
       await wait(prefersReducedMotion() ? 0 : 180);
@@ -343,7 +345,7 @@ function MatchScreen({
         </div>
 
         <div className="shrink-0 px-4 pb-[max(14px,env(safe-area-inset-bottom))]">
-          <div className="flex h-11 items-center justify-center gap-2">
+          <div className="flex h-11 items-center justify-center gap-2 mb-2">
             {game.phase === "select" && game.legal.length > 1
               ? game.legal.map((move) => {
                   const token = game.tokens.find(
